@@ -241,5 +241,16 @@ CREATE TABLE sales_returned as
     GROUP BY t.transaction_id
 ;
 -- •	conteos básicos
+SELECT 
+  COUNT(*) AS total_transactions
+FROM transactions;
 -- •	productos distintos
+SELECT 
+  COUNT(DISTINCT product_id) AS unique_products
+FROM transactions_details
+WHERE quantity > 0;
 -- •	clientes totales
+SELECT 
+  COUNT(DISTINCT customer_id) AS total_customers
+FROM transactions
+WHERE type = 'sale';
