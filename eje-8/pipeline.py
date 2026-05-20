@@ -63,6 +63,7 @@ delivery_raw = pd.read_sql("select * from raw_delivery", engine)
 # ==============================
 #Eliminar null
 delivery_raw = delivery_raw.dropna(subset=["city"])
+delivery_raw = delivery_raw.dropna(subset=["road_traffic_density"])
 #eliminar coordenadas con 0
 delivery_raw = delivery_raw[
     (delivery_raw["restaurant_latitude"] != 0) &
@@ -98,7 +99,6 @@ citys= delivery_raw[["city"]].drop_duplicates().reset_index(drop=True)
 citys["city_id"]= citys.index + 1
 citys=citys[["city_id","city"]]
 delivery_raw= delivery_raw.merge(citys, on=["city"], how="left")
-print(delivery_raw.head())
 
 #Table weather
 weather= delivery_raw[["weather"]].drop_duplicates().reset_index(drop=True)
@@ -111,7 +111,6 @@ orders= delivery_raw[["type_of_order"]].drop_duplicates().reset_index(drop=True)
 orders["order_id"]= orders.index + 1
 orders=orders[["order_id","type_of_order"]]
 delivery_raw= delivery_raw.merge(orders, on=["type_of_order"], how="left")
-
 #Table type vehicle
 vehicle= delivery_raw[["type_of_vehicle"]].drop_duplicates().reset_index(drop=True)
 vehicle["vehicle_id"]= vehicle.index + 1
@@ -123,5 +122,72 @@ traffic= delivery_raw[["road_traffic_density"]].drop_duplicates().reset_index(dr
 traffic["traffic_id"]= traffic.index + 1
 traffic=traffic[["traffic_id","road_traffic_density"]]
 delivery_raw= delivery_raw.merge(traffic, on=["road_traffic_density"], how="left")
-print(traffic.head())
-print(delivery_raw.head())
+
+
+#Fac table
+fact_deliveries= delivery_raw[["team_id","delivery_person_ratings","order_date","time_orderd","time_order_picked","weather_id","traffic_id","order_id","vehicle_id","city_id"]]
+fact_deliveries["fact_id"] =fact_deliveries.index + 1
+
+fact_deliveries= fact_deliveries[["fact_id","team_id","delivery_person_ratings","order_date","time_orderd","time_order_picked","weather_id","traffic_id","order_id","vehicle_id","city_id"]]
+fact_deliveries["order_date"] = pd.to_datetime(
+    fact_deliveries["order_date"],
+    format="%d-%m-%Y",
+    errors="coerce"
+)
+
+# invalid_times = fact_deliveries[
+
+#     pd.to_datetime(
+
+#         fact_deliveries["time_orderd"],
+
+#         format="%H:%M",
+
+#         errors="coerce"
+
+#     ).isna()
+
+# ]
+
+# invalid_times_picked = fact_deliveries[
+#     pd.to_datetime(
+#         fact_deliveries["time_order_picked"],
+#         format="%H:%M",
+#         errors="coerce"
+#     ).isna()
+# ]
+
+fact_deliveries = fact_deliveries[
+    pd.to_datetime(
+        fact_deliveries["time_orderd"],
+        format="%H:%M",
+        errors="coerce"
+    ).notna()
+]
+
+fact_deliveries = fact_deliveries[
+    pd.to_datetime(
+        fact_deliveries["time_order_picked"],
+        format="%H:%M",
+        errors="coerce"
+    ).notna()
+]
+
+fact_deliveries["time_orderd"] = pd.to_datetime(
+    fact_deliveries["time_orderd"],
+    format="%H:%M"
+).dt.time
+
+fact_deliveries["time_order_picked"] = pd.to_datetime(
+    fact_deliveries["time_order_picked"],
+    format="%H:%M"
+).dt.time
+if LOAD_TABLES:
+    # delivery_team.to_sql("delivery_team",engine, if_exists="append", index=False)
+    # citys.to_sql("citys",engine, if_exists="append", index=False)
+    # weather.to_sql("weather",engine, if_exists="append", index=False)
+    # orders.to_sql("orders",engine, if_exists="append", index=False)
+    # vehicle.to_sql("vehicle",engine, if_exists="append", index=False)
+    # traffic.to_sql("traffic",engine, if_exists="append", index=False)
+    # fact_deliveries.to_sql("fact_deliveries",engine, if_exists="append", index=False)
+    print("Datos cargados correctamente")
