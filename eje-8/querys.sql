@@ -77,27 +77,57 @@ CREATE TABLE fact_deliveries
     FOREIGN KEY (traffic_id) REFERENCES traffic(traffic_id)
 );
 --    Qué ciudad tiene más entregas
-SELECT c.city, fd.city_id, COUNT(c.city) as citys_deliverys
+SELECT c.city, COUNT(*) as citys_deliverys
 FROM fact_deliveries fd
 JOIN citys c on fd.city_id = c.city_id
-GROUP BY c.city, fd.city_id
+GROUP BY c.city
 ORDER BY citys_deliverys DESC
 ;
 
 --    Qué clima afecta más el rating
-SELECT fd.weather_id, w.weather,fd.delivery_person_ratings
+SELECT  w.weather,
+        ROUND(AVG(fd.delivery_person_ratings),2) AS avg_rating_weather
 FROM fact_deliveries fd
-JOIN weather w  on fd.weather_id = w.weather_id
-WHERE fd.delivery_person_ratings < 3
-ORDER BY fd.delivery_person_ratings ASC
+JOIN weather w  
+ON fd.weather_id = w.weather_id
+GROUP BY w.weather
+ORDER BY avg_rating_weather ASC
 ;
 
---    Cuál es el tiempo promedio entre ordenar y recoger
+-- Cuál es el tiempo promedio entre ordenar y recoger
+SELECT
+    AVG(time_order_picked - time_orderd) AS avg_prep_time
+FROM fact_deliveries;
 
---    Qué equipos tienen mejores ratings
-SELECT dt.delivery_person_id, fd.team_id, AVG(fd.delivery_person_ratings) as sum_ratings
+-- Qué equipos tienen mejores ratings
+SELECT dt.delivery_person_id, 
+       fd.team_id, 
+       ROUND(AVG(fd.delivery_person_ratings),2) as avg_ratings
 FROM fact_deliveries fd
-JOIN delivery_team dt on fd.team_id = dt.team_id
+JOIN delivery_team dt 
+on fd.team_id = dt.team_id
 GROUP BY dt.delivery_person_id,fd.team_id
-ORDER BY sum_ratings DESC
+ORDER BY avg_ratings DESC
 ;
+
+--Qué ciudades tienen peores ratings
+SELECT fd.city_id, c.city ,
+       ROUND(AVG(fd.delivery_person_ratings),2) AS average_rating
+FROM fact_deliveries fd
+JOIN citys c 
+on fd.city_id = c.city_id
+GROUP BY fd.city_id, c.city 
+ORDER BY average_rating ASC;
+
+--    Hay tráfico que afecte entregas
+SELECT t.road_traffic_density , ROUND(AVG(fd.delivery_person_ratings),2) as peor_ratings_traffic
+FROM fact_deliveries fd
+JOIN traffic t on fd.traffic_id = t.traffic_id
+GROUP BY t.road_traffic_density 
+ORDER BY peor_ratings_traffic ASC;
+
+-- * total deliveries
+-- * avg rating
+-- * avg prep time
+-- * deliveries by vehicle
+-- * deliveries by weather
