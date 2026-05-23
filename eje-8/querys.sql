@@ -127,7 +127,14 @@ GROUP BY t.road_traffic_density
 ORDER BY peor_ratings_traffic ASC;
 
 -- * total deliveries
+SELECT COUNT(*) AS total_deliveries
+FROM fact_deliveries fd;
 -- * avg rating
+SELECT AVG(fd.delivery_person_ratings) as avg_rating
+FROM fact_deliveries fd;
 -- * avg prep time
 -- * deliveries by vehicle
--- * deliveries by weather
+SELECT v.type_of_vehicle , COUNT(fd.delivery_person_id) as deliveries_vehicle
+FROM fact_deliveries fd
+JOIN vehicle v on fd.vehicle_id = v.vehicle_id
+GROUP BY v.type_of_vehicle
