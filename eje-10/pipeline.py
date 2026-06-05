@@ -50,7 +50,7 @@ if LOAD_DATA:
 buss_raw= pd.read_sql("SELECT * FROM jobs_data",engine)
 
 print("--------------------------------------")
-print(buss_raw.info())
+# print(buss_raw.info())
 
 # #separte salary in two columnas called min and max
 buss_raw["salary_estimate"]= (
@@ -81,15 +81,35 @@ buss_raw["salary_max"]= (
 # print(buss_raw[(buss_raw["founded"] >2025)])
 # print(buss_raw[(buss_raw["salary_max"] <= 0)])
 # print(buss_raw[(buss_raw["salary_min"] <=0)])
+
 #reemplazar los valores -1 de rating y founded con nan porque quiere decir que son datos nos disponibles
 buss_raw["rating"] = buss_raw["rating"].replace(-1, pd.NA)
 buss_raw["founded"] = buss_raw["founded"].replace(-1, pd.NA)
 buss_raw[["rating", "founded"]].isna().sum()
 
-#check str columns
+# for col in buss_raw.columns:
+#     print(col, (buss_raw[col].astype(str)== "-1").sum())
 buss_raw = buss_raw.replace("-1", pd.NA)
-for col in buss_raw.columns:
-    print(col, (buss_raw[col].astype(str)== "-1").sum())
+
+#check str columns
+#separar ciudad y estado
+# buss_raw[["city", "state"]] = buss_raw["location"].str.split(", ", expand=True)
+# 
+split_location = buss_raw["location"].str.split(", ",n=1, expand=True)
+
+buss_raw["city"]= split_location[0]
+buss_raw["state"]=split_location[1]
+
+
+buss_raw["revenue"] = buss_raw["revenue"].replace(
+    "Unknown / Non-Applicable",
+    pd.NA
+)
+
+# print(
+#     buss_raw["revenue"]
+#     .value_counts(dropna=False)
+# )
 print("--------------------------------------")
 # ==============================
 # LIMPIEZA
