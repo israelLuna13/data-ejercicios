@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 engine = create_engine("postgresql://postgres:@localhost:5432/data_analy_bus")
 
 LOAD_DATA=False
-LOAD_TABLES=False
+LOAD_TABLES=True
 # ==============================
 # SE ARREGLO EL PROBLEMA DONDE SE RECORRIAN LOS DATOS HACIA LA DERECHA ELIMINANDO LAS DOS PRIMERAS COLUMNAS
 # ==============================
@@ -34,11 +34,11 @@ df= pd.read_csv("./data/jobs_fixed.csv")
 #  RAW - GUARDAR TODO
 # ==============================
 # COLUMNS -> LOWERCASE
-
 df.columns= df.columns.str.strip().str.lower().str.replace(" ","_")
+
 df.rename(columns={'unnamed:_0':"id","index":"job_id"}, inplace=True)
 
-print(df.info())
+# print(df.info())
 
 if LOAD_DATA:
     df.to_sql("jobs_data",engine,if_exists="replace",index=False)
@@ -52,7 +52,7 @@ buss_raw= pd.read_sql("SELECT * FROM jobs_data",engine)
 print("--------------------------------------")
 # print(buss_raw.info())
 
-# #separte salary in two columnas called min and max
+#eliminar texto y separar el salario en min y max
 buss_raw["salary_estimate"]= (
     buss_raw["salary_estimate"]
     .str.replace(r"\s*\(Glassdoor est\.\)","", regex=True)
@@ -72,6 +72,7 @@ buss_raw["salary_max"]= (
 )
 
 #check negative columns values
+
 # ratings_invalidos= buss_raw[
 #     (buss_raw["rating"]<0) |
 #     (buss_raw["rating"]>5)
@@ -100,7 +101,6 @@ split_location = buss_raw["location"].str.split(", ",n=1, expand=True)
 buss_raw["city"]= split_location[0]
 buss_raw["state"]=split_location[1]
 
-
 buss_raw["revenue"] = buss_raw["revenue"].replace(
     "Unknown / Non-Applicable",
     pd.NA
@@ -110,7 +110,45 @@ buss_raw["revenue"] = buss_raw["revenue"].replace(
 #     buss_raw["revenue"]
 #     .value_counts(dropna=False)
 # )
+print(buss_raw.info())
 print("--------------------------------------")
 # ==============================
-# LIMPIEZA
 # ==============================
+
+#table salary
+salary= buss_raw[["salary_min","salary_max"]].drop_duplicates().reset_index(drop=True)
+salary["salary_id"]= salary.index + 1
+salary=salary[["salary_id","salary_min","salary_max"]]
+buss_raw= buss_raw.merge(salary,on=["salary_min","salary_max"], how="left")
+
+# print(salary.head())
+# print(buss_raw.head())
+
+#table location
+location= buss_raw[["city","state"]].drop_duplicates().reset_index(drop=True)
+location["location_id"]= location.index + 1
+location=location[["location_id","city","state"]]
+buss_raw= buss_raw.merge(location, on=["city","state"], how="left")
+# print(buss_raw.head())
+
+#table company
+company= buss_raw[["headquarters","type_of_ownership","industry","sector"]].drop_duplicates().reset_index(drop=True)
+company["company_id"]=company.index + 1
+company=company[["company_id","headquarters","type_of_ownership","industry","sector"]]
+buss_raw=buss_raw.merge(company, on=["headquarters","type_of_ownership","industry","sector"], how="left")
+# print(buss_raw.head())
+
+#fact table
+fact_jobs= buss_raw[["job_title","rating","founded","location_id","company_id","salary_id","revenue"]]
+fact_jobs["fact_id"]= fact_jobs.index + 1
+fact_jobs= fact_jobs[["fact_id","job_title","rating","founded","revenue","location_id","company_id","salary_id"]]
+
+# print(fact_jobs.head())
+
+
+if LOAD_TABLES:
+    # salary.to_sql("salary",engine,if_exists="append", index=False)
+    # company.to_sql("company",engine,if_exists="append", index=False)
+    # location.to_sql("location",engine,if_exists="append", index=False)
+    fact_jobs.to_sql("fact_jobs",engine,if_exists="append", index=False)
+    print("Datos cargados correctamente")
