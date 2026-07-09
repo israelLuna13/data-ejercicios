@@ -53,3 +53,47 @@ CREATE TABLE fact_jobs
     FOREIGN KEY(company_id) REFERENCES company(company_id),
     FOREIGN KEY(salary_id) REFERENCES salary(salary_id)
 )
+
+--querys
+-- numero de vacantes
+SELECT COUNT(*)
+FROM fact_jobs;
+
+--numero de empresas distintas
+SELECT COUNT(DISTINCT com.industry)
+FROM fact_jobs fj
+JOIN company com
+ON fj.company_id= com.company_id;
+
+--salario proemdio min y max
+SELECT AVG(s.salary_min) as avg_min, AVG(s.salary_max) as avg_max
+FROM salary s;
+
+--Top 10 ciudades con más vacantes
+SELECT  lo.state, COUNT(*) as num_jobs_per_state
+FROM fact_jobs fj
+JOIN location lo
+ON fj.location_id = lo.location_id
+GROUP BY  lo.state
+ORDER BY num_jobs_per_state DESC
+--LIMIT 10
+;
+--Salario promedio por estado
+SELECT  lo.state, AVG(s.salary_min) as avg_min, AVG(s.salary_max) as avg_max
+FROM fact_jobs fj
+JOIN salary s
+ON fj.salary_id = s.salary_id
+JOIN location lo
+ON fj.location_id = lo.location_id
+GROUP BY lo.state
+ORDER BY avg_max;
+
+--Salario promedio por industria
+SELECT  co.industry, AVG(s.salary_min) as avg_min, AVG(s.salary_max) as avg_max
+FROM fact_jobs fj
+JOIN salary s
+ON fj.salary_id = s.salary_id
+JOIN company co
+ON fj.company_id = co.company_id
+GROUP BY co.industry
+ORDER BY avg_max;

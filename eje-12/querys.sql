@@ -1,0 +1,20 @@
+CREATE TABLE orders_data (
+    order_id TEXT,
+    customer_id TEXT,
+    date TEXT,
+    age INTEGER,
+    gender TEXT,
+    city TEXT,
+    product_category TEXT,
+    unit_price DOUBLE PRECISION,
+    quantity INTEGER,
+    discount_amount DOUBLE PRECISION,
+    total_amount DOUBLE PRECISION,
+    payment_method TEXT,
+    device_type TEXT,
+    session_duration_minutes INTEGER,
+    pages_viewed INTEGER,
+    is_returning_customer BOOLEAN,
+    delivery_time_days INTEGER,
+    customer_rating INTEGER
+);
