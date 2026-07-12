@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 LOAD_DATA=False
-LOAD_TABLES=False
+LOAD_TABLES=True
 # ==============================
 # CONFIG
 # ==============================
@@ -36,23 +36,23 @@ engine= create_engine("postgresql://postgres:@localhost:5432/data_ecomerce")
 # ==============================
 data_raw = pd.read_sql("SELECT * FROM orders_data", engine)
 
-print(data_raw.info())
-print("-----------------")
-print(data_raw.head())
-print("-----------------")
-print(data_raw.describe())
-print("-----------------")
-print(data_raw.sample(10))
-print("-----------------")
+# print(data_raw.info())
+# print("-----------------")
+# print(data_raw.head())
+# print("-----------------")
+# print(data_raw.describe())
+# print("-----------------")
+# print(data_raw.sample(10))
+# print("-----------------")
 
 # Columnas int
-columns_int = data_raw.select_dtypes(include=["int64","float64"]).columns
+# columns_int = data_raw.select_dtypes(include=["int64","float64"]).columns
 
-for col in columns_int:
-    negative_value=(data_raw[col]< 0).sum()
-    print(f"{col}:{negative_value} negativos")
-    na_values=data_raw[col].isna().sum()
-    print(f"{col}:{na_values} nulos")
+# for col in columns_int:
+#     negative_value=(data_raw[col]< 0).sum()
+#     print(f"{col}:{negative_value} negativos")
+#     na_values=data_raw[col].isna().sum()
+#     print(f"{col}:{na_values} nulos")
 
 print("-----------------")
 
@@ -68,36 +68,36 @@ data_raw["date"]=pd.to_datetime(data_raw["date"])
 # print(data_raw["year"].value_counts().sort_index())
 
 #Columnas str
-columns_str = data_raw.select_dtypes(include=["str"]).columns
+# columns_str = data_raw.select_dtypes(include=["str"]).columns
 
-for col in columns_str:
-    print(f"\n{col}")
-    print(f"Nulos: {data_raw[col].isna().sum()}")
-    print(f"Unicos:{ len(data_raw[col].unique())}")
+# for col in columns_str:
+#     print(f"\n{col}")
+#     print(f"Nulos: {data_raw[col].isna().sum()}")
+#     print(f"Unicos:{ len(data_raw[col].unique())}")
 
-    # Espacios al inicio o final
-    spaces = (
-        data_raw[col]
-        .dropna()
-        .astype(str)
-        .apply(lambda x: x != x.strip())
-        .sum()
-    )
-    print(f"Con espacios: {spaces}")
+#     # Espacios al inicio o final
+#     spaces = (
+#         data_raw[col]
+#         .dropna()
+#         .astype(str)
+#         .apply(lambda x: x != x.strip())
+#         .sum()
+#     )
+#     print(f"Con espacios: {spaces}")
 
-    # Cadenas vacía
-    empty = (
-        data_raw[col]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .eq("")
-        .sum()
-    )
-    print(f"Cadenas vacías: {empty}")
+#     # Cadenas vacía
+#     empty = (
+#         data_raw[col]
+#         .dropna()
+#         .astype(str)
+#         .str.strip()
+#         .eq("")
+#         .sum()
+#     )
+#     print(f"Cadenas vacías: {empty}")
 
-    if data_raw[col].nunique(dropna=False) <= 20:
-        print(data_raw[col].value_counts(dropna=False))
+#     if data_raw[col].nunique(dropna=False) <= 20:
+#         print(data_raw[col].value_counts(dropna=False))
 
 # ==============================
 # ==============================
@@ -120,14 +120,14 @@ data_raw = data_raw.merge(dim_customer, on=["customer_id","age","gender","city",
 # dim_city = dim_city[["id_city","city"]]
 # data_raw = data_raw.merge(dim_city, on=["city"], how="left")
 dim_category = data_raw[["product_category"]].drop_duplicates().reset_index(drop=True)
-dim_category["id_product"] = dim_category.index + 1
-dim_category = dim_category[["id_product","product_category"]]
+dim_category["id_category"] = dim_category.index + 1
+dim_category = dim_category[["id_category","product_category"]]
 data_raw = data_raw.merge(dim_category, on=["product_category"], how="left")
 
-dim_fact= data_raw[["order_id","date","id_cust","id_device","id_payment","unit_price","quantity","discount_amount","total_amount","delivery_time_days","customer_rating"]]
+dim_fact= data_raw[["order_id","date","id_cust","id_device","id_category","id_payment","unit_price","quantity","discount_amount","total_amount","delivery_time_days","customer_rating"]]
 dim_fact["id_fact"]= dim_fact.index+1
-dim_fact= dim_fact[["id_fact","date","order_id","id_cust","id_device","id_payment","unit_price","quantity","discount_amount","total_amount","delivery_time_days","customer_rating"]]
-print(dim_fact)
+dim_fact= dim_fact[["id_fact","date","order_id","id_cust","id_category","id_device","id_payment","unit_price","quantity","discount_amount","total_amount","delivery_time_days","customer_rating"]]
+# print(dim_fact)
 
 # dim_gender = data_raw[["gender"]].drop_duplicates().reset_index(drop=True)
 # dim_gender["id_gender"] = dim_gender.index + 1
@@ -137,3 +137,12 @@ print(dim_fact)
 # print(data_raw.groupby("customer_id").size().sort_values(ascending=False).head())
 
 # print(data_raw.groupby("customer_id")[["age", "gender", "city"]].nunique())
+
+
+if LOAD_TABLES:
+    dim_device.to_sql("dim_device",engine, if_exists="append", index=False)
+    dim_payment.to_sql("dim_payment",engine, if_exists="append", index=False)
+    dim_category.to_sql("dim_category",engine, if_exists="append", index=False)
+    dim_customer.to_sql("dim_customer",engine, if_exists="append", index=False)
+    dim_fact.to_sql("dim_fact",engine, if_exists="append", index=False)
+    print("Data cargados correctamente")
